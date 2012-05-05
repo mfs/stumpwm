@@ -282,8 +282,8 @@ critical."
   (xlib:create-window
    :parent parent
    :x 0 :y 0 :width 1 :height 1
-   :background (alloc-color screen *mode-line-background-color*)
-   :border (alloc-color screen *mode-line-border-color*)
+   :background (alloc-color screen (lookup-color screen *mode-line-background-color*))
+   :border (alloc-color screen (lookup-color screen *mode-line-border-color*))
    :border-width *mode-line-border-width*
    ;; You can click the modeline
    :event-mask (xlib:make-event-mask :button-press :exposure)
@@ -350,15 +350,16 @@ critical."
 (defun make-mode-line-gc (window screen)
   (xlib:create-gcontext :drawable window
                         :font (screen-font screen)
-                        :foreground (alloc-color screen *mode-line-foreground-color*)
-                        :background (alloc-color screen *mode-line-background-color*)))
+                        :foreground (alloc-color screen (lookup-color screen *mode-line-foreground-color*))
+                        :background (alloc-color screen (lookup-color screen *mode-line-background-color*))))
 
 
 (defun update-mode-line-color-context (ml)
   (let* ((cc (mode-line-cc ml))
          (screen (mode-line-screen ml))
          (bright (lookup-color screen *mode-line-foreground-color*)))
-    (adjust-color bright 0.25)
+    (when *bright-colors*
+      (adjust-color bright 0.25))
     (setf (ccontext-default-bright cc) (alloc-color screen bright))))
 
 (defun make-head-mode-line (screen head format)

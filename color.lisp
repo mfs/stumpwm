@@ -66,29 +66,38 @@ then call (update-color-map).")
   (xlib:alloc-color (xlib:screen-default-colormap (screen-number screen)) color))
 
 (defun lookup-color (screen color)
-  (xlib:lookup-color (xlib:screen-default-colormap (screen-number screen)) color))
+  (flet ((hex ()
+           (apply #'xlib:make-color
+                  (loop for (x y) in '((:red 16) (:green 8) (:blue 0))
+                     nconcing (list x (/ (ldb (byte 8 y) color)
+                                         256))))))
+    (cond ((integerp color) (hex))
+          ((typep color 'xlib:color) color)
+          (t (xlib:lookup-color (xlib:screen-default-colormap (screen-number screen)) color)))))
 
 ;; Normal colors are dimmed and bright colors are intensified in order
 ;; to more closely resemble the VGA pallet.
 (defun update-color-map (screen)
   "Read *colors* and cache their pixel colors for use when rendering colored text."
-  (let ((scm (xlib:screen-default-colormap (screen-number screen))))
-    (labels ((map-colors (amt)
-               (loop for c in *colors*
-                     as color = (xlib:lookup-color scm c)
-                     do (adjust-color color amt)
-                     collect (xlib:alloc-color scm color))))
-      (setf (screen-color-map-normal screen) (apply #'vector (map-colors -0.25))
-            (screen-color-map-bright screen) (apply #'vector (map-colors 0.25))))))
+  (labels ((map-colors (amt)
+             (loop for c in *colors*
+                as color =  (lookup-color screen c)
+                do (adjust-color color amt)
+                collect (alloc-color screen color))))
+    (let ((amt (if *bright-colors*
+                   '(-0.25 . 0.25)
+                   '(0.0 . 0.0))))
+      (setf (screen-color-map-normal screen) (apply #'vector (map-colors (car amt)))
+            (screen-color-map-bright screen) (apply #'vector (map-colors (cdr amt)))))))
 
 (defun update-screen-color-context (screen)
-  (let* ((cc (screen-message-cc screen))
-         (bright (lookup-color screen *text-color*)))
-    (setf
-     (ccontext-default-fg cc) (screen-fg-color screen)
-     (ccontext-default-bg cc) (screen-bg-color screen))
-    (adjust-color bright 0.25)
-    (setf (ccontext-default-bright cc) (alloc-color screen bright))))
+  (let ((cc (screen-message-cc screen))
+        (bright (lookup-color screen *text-color*)))
+    (when *bright-colors*
+      (adjust-color bright 0.25))
+    (setf (ccontext-default-fg cc) (screen-fg-color screen)
+          (ccontext-default-bg cc) (screen-bg-color screen)
+          (ccontext-default-bright cc) (alloc-color screen bright))))
 
 (defun get-bg-color (screen cc color)
   (setf *background* color)

@@ -109,6 +109,7 @@
           *default-group-name*
           *window-border-style*
           *data-dir*
+          *bright-colors*
           add-hook
           clear-window-placement-rules
           concat
@@ -152,6 +153,9 @@ be an integer.")
 
 (defvar *grab-pointer-count* 0
   "The number of times the pointer has been grabbed")
+
+(defvar *bright-colors* t
+  "Make colors brighter. This is the default.")
 
 ;;; Hooks
 

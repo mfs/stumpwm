@@ -249,7 +249,7 @@ identity with a range check."
 
 (defmacro set-any-color (val color)
   `(progn (dolist (s *screen-list*)
-            (setf (,val s) (alloc-color s ,color)))
+            (setf (,val s) (alloc-color s (lookup-color s ,color))))
     (update-colors-all-screens)))
 
 ;; FIXME: I don't like any of this.  Isn't there a way to define
